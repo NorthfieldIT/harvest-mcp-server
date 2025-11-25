@@ -1,10 +1,10 @@
-# Harvest MCP Server with OAuth
+# Harvest MCP Server (OAuth client for Harvest)
 
-An HTTP-based MCP server that provides natural language time tracking for Harvest with OAuth authentication. This server makes time tracking more intuitive by understanding natural language inputs and automatically handling common scenarios like leave requests.
+An HTTP-based MCP server that provides natural language time tracking for Harvest. The application acts as an OAuth client when communicating with the Harvest API (it is not an OAuth provider/server). This server makes time tracking more intuitive by understanding natural language inputs and automatically handling common scenarios like leave requests.
 
 ## Features
 
-- 🔐 OAuth 2.0 authentication with Harvest
+- 🔐 OAuth 2.0 client for Harvest (this app is an OAuth client, not an OAuth server)
 - 🔑 Stateless JWT tokens with encrypted credentials (MCP clients)
 - 🗣️ Natural language time entry parsing
 - 🏖️ Special leave request handling (e.g., "I'm off sick today")
@@ -25,6 +25,8 @@ This is a single-tenant, multi-user HTTP-based MCP server where:
 - The server makes Harvest API calls on behalf of authenticated users
 - Containerized for easy deployment in Kubernetes or other platforms
 
+Note: this repository implements the MCP HTTP endpoints (for Claude and similar clients) and acts as an OAuth client when obtaining access tokens from Harvest. It does not implement an OAuth authorization server/provider.
+
 ## Prerequisites
 
 - Node.js 20+ installed (for local development)
@@ -37,6 +39,8 @@ This is a single-tenant, multi-user HTTP-based MCP server where:
 2. Create a new OAuth2 application
 3. Set the redirect URI to: `http://localhost:3000/auth/callback` (or your production URL)
 4. Note down your Client ID and Client Secret
+
+> Security note: Store your Client ID and Client Secret on your machine (for example, in a local `.env` file during development or in Kubernetes Secrets in production). These credentials are sensitive and should never be committed to the repository.
 
 ## Installation & Setup
 
@@ -163,6 +167,7 @@ Add to your `~/.claude.json` file:
 - You must authenticate via the OAuth flow before Claude can use the tools
 - Open `http://localhost:3000/auth/harvest` in a browser to authenticate
 - Each user needs to authenticate individually with their Harvest account
+- OAuth credentials (Client ID/Secret) and session secrets are stored on the machine or in your cluster's secret store — see the setup instructions for `.env` and Kubernetes Secrets usage.
 
 ## Usage
 
@@ -317,12 +322,12 @@ Test files are located in `src/__tests__/` and use Jest with Supertest for HTTP 
 
 ## Security Considerations
 
-- Always use HTTPS in production
-- Keep OAuth credentials secure and never commit them to git
-- Use strong session secrets
-- Configure CORS appropriately for your domain
-- Session cookies are httpOnly and secure in production
-- Tokens are not logged (redacted in structured logs)
+ - Always use HTTPS in production
+ - Keep OAuth credentials secure and never commit them to git. Store them on your machine or in a secrets manager; do not check them into source control.
+ - Use strong session secrets
+ - Configure CORS appropriately for your domain
+ - Session cookies are httpOnly and secure in production
+ - Tokens are not logged (redacted in structured logs)
 
 ## Troubleshooting
 
