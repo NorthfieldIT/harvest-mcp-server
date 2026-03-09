@@ -373,3 +373,4 @@ MIT License - see [LICENSE](LICENSE) for details
 ### v0.1.x
 - Initial STDIO-based MCP server
 - Personal access token authentication
+
