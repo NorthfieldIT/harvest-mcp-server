@@ -114,7 +114,7 @@ export function createApp(config: Config, logger: Logger): Express {
     res.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      version: '0.2.0',
+      version: '0.3.0',
     });
   });
 
