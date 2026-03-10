@@ -8,6 +8,10 @@ import { Express } from 'express';
 import { createApp } from '../app.js';
 import { Config } from '../config.js';
 import pino from 'pino';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const { version } = require('../../package.json');
 
 describe('Server Integration Tests', () => {
   let app: Express;
@@ -45,7 +49,7 @@ describe('Server Integration Tests', () => {
 
       expect(response.body).toMatchObject({
         status: 'healthy',
-        version: '0.2.0',
+        version,
       });
       expect(response.body.timestamp).toBeDefined();
     });
@@ -59,7 +63,7 @@ describe('Server Integration Tests', () => {
 
       expect(response.body).toMatchObject({
         name: 'Harvest MCP Server',
-        version: '0.2.0',
+        version,
         authenticated: false,
         endpoints: {
           auth: '/auth/harvest',

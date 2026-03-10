@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createRequire } from 'module';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -39,6 +40,9 @@ interface TimeReportResponse {
   page: number;
 }
 
+const require = createRequire(import.meta.url);
+const { version } = require('../package.json');
+
 const HARVEST_ACCESS_TOKEN = process.env.HARVEST_ACCESS_TOKEN;
 const HARVEST_ACCOUNT_ID = process.env.HARVEST_ACCOUNT_ID;
 const STANDARD_WORK_DAY_HOURS = parseFloat(process.env.STANDARD_WORK_DAY_HOURS || '7.5');
@@ -70,7 +74,7 @@ class HarvestServer {
     this.server = new Server(
       {
         name: 'harvest-server',
-        version: '0.1.0',
+        version,
       },
       {
         capabilities: {

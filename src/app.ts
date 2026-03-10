@@ -24,6 +24,7 @@ import { createRedisClient } from './redis-client.js';
 
 const require = createRequire(import.meta.url);
 const pinoHttp = require('pino-http');
+const { version } = require('../package.json');
 
 interface McpSession {
   server: McpServer;
@@ -114,7 +115,7 @@ export function createApp(config: Config, logger: Logger): Express {
     res.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      version: '0.3.0',
+      version,
     });
   });
 
@@ -137,7 +138,7 @@ export function createApp(config: Config, logger: Logger): Express {
 
     res.json({
       name: 'Harvest MCP Server',
-      version: '0.2.0',
+      version,
       authenticated: isAuthenticated,
       user: isAuthenticated ? { id: req.session.harvestUserId } : undefined,
       endpoints: {
@@ -569,7 +570,7 @@ export function createApp(config: Config, logger: Logger): Express {
 
         const mcpServer = new McpServer({
           name: 'harvest-server',
-          version: '0.2.0',
+          version,
         });
 
         // Setup tool handlers
