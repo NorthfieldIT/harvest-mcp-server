@@ -3,7 +3,7 @@
  */
 import express, { Request, Response, NextFunction, Express } from 'express';
 import session from 'express-session';
-import RedisStore from 'connect-redis';
+import { RedisStore } from 'connect-redis';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { createRequire } from 'module';

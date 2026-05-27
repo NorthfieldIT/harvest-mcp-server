@@ -350,13 +350,12 @@ describe('OAuth Provider Endpoints', () => {
     });
   });
 
-  describe('GET /mcp with Bearer token (SSE)', () => {
-    // TODO: Fix SSE test - connection stays open and causes timeout
-    it.skip('should establish SSE connection with Bearer token authentication', async () => {
+  describe('POST /mcp with Bearer token', () => {
+    it('should initialize MCP session with Bearer token authentication', async () => {
       const agent = request.agent(app);
       const mcpClientRedirectUri = 'http://localhost:8080/callback';
 
-      // Complete OAuth flow to get access token
+      // Complete the full OAuth provider flow to obtain a JWT Bearer token
       const authResponse = await agent
         .get('/oauth/authorize')
         .query({
@@ -417,17 +416,27 @@ describe('OAuth Provider Endpoints', () => {
 
       const accessToken = tokenResponse.body.access_token;
 
-      // Now use Bearer token to establish SSE connection
-      const mcpResponse = await request(app)
-        .get('/mcp')
+      // Use Bearer token to initialize an MCP session via POST
+      // StreamableHTTPServerTransport requires Accept: application/json, text/event-stream
+      const initResponse = await request(app)
+        .post('/mcp')
         .set('Authorization', `Bearer ${accessToken}`)
-        .expect(200)
-        .expect('Content-Type', /text\/event-stream/);
+        .set('Accept', 'application/json, text/event-stream')
+        .send({
+          jsonrpc: '2.0',
+          method: 'initialize',
+          params: {
+            protocolVersion: '2024-11-05',
+            capabilities: {},
+            clientInfo: { name: 'test-client', version: '1.0.0' },
+          },
+          id: 1,
+        })
+        .expect(200);
 
-      // Verify SSE endpoint event is sent
-      expect(mcpResponse.text).toContain('event: endpoint');
-      expect(mcpResponse.text).toContain('data: ');
-      expect(mcpResponse.text).toContain('/mcp/message?sessionId=');
+      // The mcp-session-id header confirms Bearer auth succeeded end-to-end.
+      // The initialize result is streamed back via SSE (text/event-stream), not JSON body.
+      expect(initResponse.headers['mcp-session-id']).toBeTruthy();
     });
 
     it('should reject invalid Bearer token', async () => {
