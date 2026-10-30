@@ -131,8 +131,8 @@
                   "name": "harvest-mcp-prd",
                   "vcsData": {
                     "projectType": "github",
-                    "accountLogin": "swalberg",
-                    "projectUrl": "https://github.com/swalberg/harvest-mcp-server",
+                    "accountLogin": "NorthfieldIT",
+                    "projectUrl": "https://github.com/NorthfieldIT/harvest-mcp-server",
                     "projectBranch": "main"
                   },
                   "ports": [
@@ -235,9 +235,9 @@
     "concurrencyPolicy": "allow"
   },
   "gitops": {
-    "repoUrl": "https://github.com/swalberg/harvest-mcp-server",
+    "repoUrl": "https://github.com/NorthfieldIT/harvest-mcp-server",
     "vcsService": "github",
-    "accountLogin": "swalberg",
+    "accountLogin": "NorthfieldIT",
     "branch": "main",
     "filePath": "/northflank.json"
   },
