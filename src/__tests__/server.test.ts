@@ -210,17 +210,15 @@ describe('Server Integration Tests', () => {
       });
     });
 
-    // TODO: Update this test for SSE transport (GET /mcp instead of POST /mcp)
-    it.skip('should process authenticated MCP requests', async () => {
+    it('should initialize MCP session with session authentication', async () => {
       const agent = request.agent(app);
 
-      // Authenticate first
+      // Authenticate via browser OAuth
       const authResponse = await agent.get('/auth/harvest');
       const location = authResponse.headers.location;
       const stateMatch = location?.match(/state=([^&]+)/);
       const state = stateMatch ? stateMatch[1] : '';
 
-      // Mock OAuth flow
       nock('https://id.getharvest.com')
         .post('/api/v2/oauth2/token')
         .reply(200, {
@@ -245,87 +243,46 @@ describe('Server Integration Tests', () => {
 
       await agent.get(`/auth/callback?code=test-code&state=${state}`);
 
-      // Now test MCP endpoint
-      const response = await agent
+      // Send MCP initialize request using session authentication
+      // StreamableHTTPServerTransport requires Accept: application/json, text/event-stream
+      const initResponse = await agent
+        .post('/mcp')
+        .set('Accept', 'application/json, text/event-stream')
+        .send({
+          jsonrpc: '2.0',
+          method: 'initialize',
+          params: {
+            protocolVersion: '2024-11-05',
+            capabilities: {},
+            clientInfo: { name: 'test-client', version: '1.0.0' },
+          },
+          id: 1,
+        })
+        .expect(200);
+
+      // The mcp-session-id header proves auth was accepted and the transport created a session.
+      // The initialize result is streamed back via SSE (text/event-stream), not JSON body.
+      expect(initResponse.headers['mcp-session-id']).toBeTruthy();
+    });
+
+    it('should reject non-initialize POST /mcp without session ID', async () => {
+      // The transport requires either an existing session ID or an initialize request.
+      // A tools/list call with no session ID must be rejected before auth is checked.
+      const response = await request(app)
         .post('/mcp')
         .send({
           jsonrpc: '2.0',
           method: 'tools/list',
           id: 1,
         })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('tools');
-      expect(Array.isArray(response.body.tools)).toBe(true);
-      expect(response.body.tools.length).toBeGreaterThan(0);
-
-      // Verify tool names
-      const toolNames = response.body.tools.map((t: any) => t.name);
-      expect(toolNames).toContain('log_time');
-      expect(toolNames).toContain('list_projects');
-      expect(toolNames).toContain('list_entries');
-    });
-
-    // TODO: Update this test for SSE transport
-    it.skip('should return 500 on server error', async () => {
-      const agent = request.agent(app);
-
-      // Authenticate first
-      const authResponse = await agent.get('/auth/harvest');
-      const location = authResponse.headers.location;
-      const stateMatch = location?.match(/state=([^&]+)/);
-      const state = stateMatch ? stateMatch[1] : '';
-
-      // Mock OAuth flow
-      nock('https://id.getharvest.com')
-        .post('/api/v2/oauth2/token')
-        .reply(200, {
-          access_token: 'test-token',
-          refresh_token: 'test-refresh',
-          expires_in: 3600,
-          token_type: 'Bearer',
-        });
-
-      nock('https://id.getharvest.com')
-        .get('/api/v2/accounts')
-        .reply(200, { accounts: [{ id: 12345 }] });
-
-      nock('https://api.harvestapp.com')
-        .get('/v2/users/me')
-        .reply(200, {
-          id: 67890,
-          email: 'test@example.com',
-          first_name: 'Test',
-          last_name: 'User',
-        });
-
-      await agent.get(`/auth/callback?code=test-code&state=${state}`);
-
-      // Mock a Harvest API failure that will cause tools/call to throw an error
-      nock('https://api.harvestapp.com')
-        .post('/v2/time_entries')
-        .replyWithError('Network error');
-
-      // Send a tools/call request that will trigger the error
-      const response = await agent
-        .post('/mcp')
-        .send({
-          jsonrpc: '2.0',
-          method: 'tools/call',
-          id: 1,
-          params: {
-            name: 'log_time',
-            arguments: {
-              text: '2 hours on Test Project doing testing',
-            },
-          },
-        })
-        .expect(500);
+        .expect(400);
 
       expect(response.body).toMatchObject({
-        error: 'MCP request failed',
+        jsonrpc: '2.0',
+        error: expect.objectContaining({
+          message: expect.stringContaining('not an initialization request'),
+        }),
       });
-      expect(response.body).toHaveProperty('message');
     });
   });
 });
